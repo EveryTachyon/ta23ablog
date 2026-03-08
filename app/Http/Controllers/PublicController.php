@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Comment;
+use App\Models\Category;
 use App\Models\Like;
 use App\Models\Post;
 use Illuminate\Http\Request;
@@ -17,7 +17,7 @@ class PublicController extends Controller
     }
 
     public function post(Post $post) {
-        $post->loadCount('comments', 'likes')->load('comments.user');
+        $post->loadCount('comments', 'likes')->load('comments');
         return view('post', compact('post'));
     }
 
@@ -34,16 +34,13 @@ class PublicController extends Controller
         return redirect()->back();
     }
 
-    public function storeComment(Request $request, Post $post) {
-        $validated = $request->validate([
-            'body' => 'required|string|max:1000',
-        ]);
+    public function category(Category $category) {
+        $posts = $category->posts()
+                        ->with('user')
+                        ->withCount('comments', 'likes')
+                        ->latest()
+                        ->simplePaginate(16);
 
-        $comment = new Comment($validated);
-        $comment->post()->associate($post);
-        $comment->user()->associate(Auth::user());
-        $comment->save();
-
-        return redirect()->back()->with('success', 'Comment added successfully!');
+        return view('welcome', compact('posts'));
     }
 }
